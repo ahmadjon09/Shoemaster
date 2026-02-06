@@ -21,7 +21,7 @@ import {
 } from 'lucide-react'
 import Fetch from '../middlewares/fetcher'
 import { ContextData } from '../contextData/Context'
-import { api } from '../assets/js/f'
+import { api } from '../assets/js/i'
 
 export const UserManagement = () => {
   const { id, admin } = useParams()
