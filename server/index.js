@@ -1,0 +1,105 @@
+import express from 'express'
+import cors from 'cors'
+import mongoose from 'mongoose'
+import axios from 'axios'
+import ProductRoutes from './routes/product.js'
+import StatsRoutes from './routes/stats.js'
+import OrderRoutes from './routes/order.js'
+import ClientRoutes from './routes/client.js'
+import path from 'path'
+import UserRoutes from './routes/user.js'
+import dotenv from 'dotenv'
+import { getSystemHealth } from './controllers/health.js'
+import os from "os"
+import isExisted from './middlewares/isExisted.js'
+import IsAdmin from './middlewares/IsAdmin.js'
+
+
+
+dotenv.config()
+const getLocalIP = () => {
+  const nets = os.networkInterfaces();
+  for (const name of Object.keys(nets)) {
+    for (const net of nets[name]) {
+      if (net.family === "IPv4" && !net.internal) {
+        return net.address;
+      }
+    }
+  }
+  return "127.0.0.1";
+};
+const app = express()
+app.use(cors())
+app.use(express.json())
+
+
+
+
+
+app.get('/api/status', (_, res) => {
+  setImmediate(() => {
+    res.json({
+      status: 'working',
+      port: process.env.PORT || 3000
+    })
+  })
+})
+app.get('/api/', (_, res) => res.send('Server is running!'))
+app.use('/api/users', UserRoutes)
+app.use('/api/stats', isExisted, IsAdmin, StatsRoutes)
+app.use('/api/products', ProductRoutes)
+app.use('/api/orders', OrderRoutes)
+app.use('/api/clients', ClientRoutes)
+app.use('/api/health', getSystemHealth)
+app.get('/api/system', (_, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'health.html'))
+})
+app.get('/api/about', (_, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'))
+})
+
+
+const keepServerAlive = () => {
+  const pingInterval = 12 * 60 * 1000;
+
+  const checkAndPing = () => {
+    const now = new Date();
+    const hourTashkent = (now.getUTCHours() + 5) % 24;
+
+    if (hourTashkent >= 8 || hourTashkent < 1) {
+      axios
+        .get(process.env.RENDER_URL)
+        .then(() => console.log('🔄 Server active (Tashkent time)'))
+        .catch(() => console.log('⚠️ Ping failed'))
+    } else {
+      console.log('💤 Keep-alive uyqu rejimida (Tashkent time)')
+    }
+  }
+
+  checkAndPing();
+  setInterval(checkAndPing, pingInterval);
+}
+
+keepServerAlive();
+
+
+const startApp = async () => {
+  const PORT = process.env.PORT || 3000
+  const HOST = "0.0.0.0"
+  try {
+    await mongoose.connect(process.env.MONGODB_URL)
+    console.log('✔️  MongoDB connected')
+    app.listen(PORT, HOST, () => {
+      const ip = getLocalIP();
+      console.log("================================");
+      console.log("🚀 Server ishga tushdi");
+      console.log(`🌐 Localhost: http://localhost:${PORT}`);
+      console.log(`📱 IP orqali: http://${ip}:${PORT}`);
+      console.log("================================");
+    })
+  } catch (error) {
+    console.log(error)
+  }
+}
+
+startApp()

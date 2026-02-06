@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Inventory Management System API</title>
+    <style>
+      :root {
+        --primary: #3498db;
+        --secondary: #2c3e50;
+        --success: #27ae60;
+        --danger: #e74c3c;
+        --warning: #f39c12;
+        --light: #ecf0f1;
+        --dark: #2c3e50;
+        --gray: #95a5a6;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      }
+
+      body {
+        background-color: #f5f7fa;
+        color: #333;
+        line-height: 1.6;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+
+      header {
+        background: linear-gradient(135deg, var(--secondary), var(--primary));
+        color: white;
+        padding: 30px 0;
+        margin-bottom: 30px;
+        border-radius: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      }
+
+      .header-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 20px;
+      }
+
+      .logo {
+        font-size: 28px;
+        font-weight: 700;
+      }
+
+      .base-url {
+        background: rgba(255, 255, 255, 0.2);
+        padding: 8px 15px;
+        border-radius: 20px;
+        font-family: monospace;
+      }
+
+      .section {
+        background: white;
+        border-radius: 10px;
+        margin-bottom: 30px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+      }
+
+      .section-header {
+        background: var(--primary);
+        color: white;
+        padding: 15px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .section-title {
+        font-size: 22px;
+        font-weight: 600;
+      }
+
+      .section-content {
+        padding: 20px;
+      }
+
+      .model {
+        background: var(--light);
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+      }
+
+      .model-title {
+        font-weight: 600;
+        margin-bottom: 10px;
+        color: var(--secondary);
+      }
+
+      .model-field {
+        display: flex;
+        margin-bottom: 5px;
+        padding-left: 15px;
+      }
+
+      .field-name {
+        font-weight: 600;
+        min-width: 150px;
+      }
+
+      .field-type {
+        color: var(--primary);
+        font-family: monospace;
+      }
+
+      .routes {
+        display: grid;
+        gap: 20px;
+      }
+
+      .route {
+        border: 1px solid #e1e8ed;
+        border-radius: 8px;
+        overflow: hidden;
+      }
+
+      .route-header {
+        display: flex;
+        align-items: center;
+        padding: 12px 15px;
+        background: #f8f9fa;
+        border-bottom: 1px solid #e1e8ed;
+      }
+
+      .method {
+        padding: 5px 10px;
+        border-radius: 4px;
+        color: white;
+        font-weight: 600;
+        margin-right: 10px;
+        min-width: 70px;
+        text-align: center;
+      }
+
+      .method-get {
+        background: var(--primary);
+      }
+
+      .method-post {
+        background: var(--success);
+      }
+
+      .method-put {
+        background: var(--warning);
+      }
+
+      .method-delete {
+        background: var(--danger);
+      }
+
+      .url {
+        font-family: monospace;
+        font-size: 16px;
+      }
+
+      .auth-badge {
+        margin-left: auto;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+      }
+
+      .auth-required {
+        background: var(--warning);
+        color: white;
+      }
+
+      .auth-not-required {
+        background: var(--gray);
+        color: white;
+      }
+
+      .admin-only {
+        background: var(--danger);
+        color: white;
+        margin-left: 10px;
+      }
+
+      .route-body {
+        padding: 15px;
+      }
+
+      .description {
+        margin-bottom: 15px;
+        color: #555;
+      }
+
+      .request-body,
+      .response {
+        margin-bottom: 15px;
+      }
+
+      .sub-title {
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: var(--secondary);
+      }
+
+      .code-block {
+        background: #2c3e50;
+        color: #ecf0f1;
+        padding: 15px;
+        border-radius: 6px;
+        font-family: monospace;
+        white-space: pre-wrap;
+        overflow-x: auto;
+      }
+
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 20px;
+      }
+
+      .stat-card {
+        background: var(--light);
+        padding: 15px;
+        border-radius: 8px;
+      }
+
+      .stat-title {
+        font-weight: 600;
+        margin-bottom: 10px;
+        color: var(--secondary);
+      }
+
+      footer {
+        text-align: center;
+        padding: 20px;
+        color: var(--gray);
+        margin-top: 40px;
+      }
+
+      @media (max-width: 768px) {
+        .header-content {
+          flex-direction: column;
+          text-align: center;
+        }
+
+        .base-url {
+          margin-top: 15px;
+        }
+
+        .stats-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="container">
+        <div class="header-content">
+          <div class="logo">Inventory Management System API</div>
+          <div class="base-url">Base URL: https://planly.onrender.com/api</div>
+        </div>
+      </div>
+    </header>
+
+    <div class="container">
+      <!-- Users Section -->
+      <section class="section">
+        <div class="section-header">
+          <div class="section-title">Users</div>
+        </div>
+        <div class="section-content">
+          <div class="model">
+            <div class="model-title">User Model</div>
+            <div class="model-field">
+              <div class="field-name">_id</div>
+              <div class="field-type">ObjectId</div>
+            </div>
+            <div class="model-field">
+              <div class="field-name">phoneNumber</div>
+              <div class="field-type">String (unique, required)</div>
+            </div>
+            <div class="model-field">
+              <div class="field-name">firstName</div>
+              <div class="field-type">String (required)</div>
+            </div>
+            <div class="model-field">
+              <div class="field-name">lastName</div>
+              <div class="field-type">String (required)</div>
+            </div>
+            <div class="model-field">
+              <div class="field-name">role</div>
+              <div class="field-type">
+                String (e.g. 'admin', 'seller', 'manager')
+              </div>
+            </div>
+            <div class="model-field">
+              <div class="field-name">owner</div>
+              <div class="field-type">Boolean (default: false)</div>
+            </div>
+            <div class="model-field">
+              <div class="field-name">password</div>
+              <div class="field-type">String (required)</div>
+            </div>
+          </div>
+
+          <div class="routes">
+            <!-- Register Route -->
+            <div class="route">
+              <div class="route-header">
+                <div class="method method-post">POST</div>
+                <div class="url">/users/register</div>
+                <div class="auth-badge auth-required">Auth Required</div>
+              </div>
+              <div class="route-body">
+                <div class="description">
+                  Yangi userni ro'yxatdan o'tkazadi (faqat birinchi marta).
+                </div>
+
+                <div class="request-body">
+                  <div class="sub-title">Request Body:</div>
+                  <div class="code-block">
+                    { "phoneNumber": "String", "firstName": "String",
+                    "lastName": "String", "role": "String", "password": "String"
+                    }
+                  </div>
+                </div>
+
+                <div class="response">
+                  <div class="sub-title">Response:</div>
+                  <div class="code-block">
+                    { "message": "User created successfully" }
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Login Route -->
+            <div class="route">
+              <div class="route-header">
+                <div class="method method-post">POST</div>
+                <div class="url">/users/login</div>
+                <div class="auth-badge auth-not-required">
+                  Auth Not Required
+                </div>
+              </div>
+              <div class="route-body">
+                <div class="description">
+                  User login qiladi va token qaytaradi.
+                </div>
+
+                <div class="request-body">
+                  <div class="sub-title">Request Body:</div>
+                  <div class="code-block">
+                    { "phoneNumber": "String", "password": "String" }
+                  </div>
+                </div>
+
+                <div class="response">
+                  <div class="sub-title">Response:</div>
+                  <div class="code-block">
+                    { "token": "JWT_TOKEN", "user": { "_id": "String",
+                    "firstName": "String", "lastName": "String", "role":
+                    "String", "owner": "Boolean" } }
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Get All Users Route -->
+            <div class="route">
+              <div class="route-header">
+                <div class="method method-get">GET</div>
+                <div class="url">/users/</div>
+                <div class="auth-badge auth-required">Auth Required</div>
+              </div>
+              <div class="route-body">
+                <div class="description">Barcha foydalanuvchilarni olish.</div>
+              </div>
+            </div>
+
+            <!-- Get Current User Route -->
+            <div class="route">
+              <div class="route-header">
+                <div class="method method-get">GET</div>
+                <div class="url">/users/me</div>
+                <div class="auth-badge auth-required">Auth Required</div>
+              </div>
+              <div class="route-body">
+                <div class="description">
+                  Kirish qilgan userning shaxsiy ma'lumotlarini olish.
+                </div>
+              </div>
+            </div>
+
+            <!-- Get User By ID Route -->
+            <div class="route">
+              <div class="route-header">
+                <div class="method method-get">GET</div>
+                <div class="url">/users/:id</div>
+                <div class="auth-badge auth-required">Auth Required</div>
+              </div>
+              <div class="route-body">
+                <div class="description">
+                  Berilgan ID bo'yicha bitta foydalanuvchini olish.
+                </div>
+              </div>
+            </div>
+
+            <!-- Update User Route -->
+            <div class="route">
+              <div class="route-header">
+                <div class="method method-put">PUT</div>
+                <div class="url">/users/:id</div>
+                <div class="auth-badge auth-required">Auth Required</div>
+              </div>
+              <div class="route-body">
+                <div class="description">Foydalanuvchini yangilash.</div>
+              </div>
+            </div>
+
+            <!-- Delete User Route -->
+            <div class="route">
+              <div class="route-header">
+                <div class="method method-delete">DELETE</div>
+                <div class="url">/users/:id</div>
+                <div class="auth-badge auth-required">Auth Required</div>
+                <div class="auth-badge admin-only">Admin Only</div>
+              </div>
+              <div class="route-body">
+                <div class="description">
+                  Foydalanuvchini o'chirish (faqat admin uchun).
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Products Section -->
+      <section class="section">
+        <div class="section-header">
+          <div class="section-title">Products</div>
+        </div>
+        <div class="section-content">
+          <div class="model">
+            <div class="model-title">Product Model</div>
+            <div class="model-field">
+              <div class="field-name">_id</div>
+              <div class="field-type">ObjectId</div>
+            </div>
+            <div class="model-field">
+              <div class="field-name">title</div>
+              <div class="field-type">String (required)</div>
+            </div>
+            <div class="model-field">
+              <div class="field-name">price</div>
+              <div class="field-type">Number (required)</div>
+            </div>
+            <div class="model-field">
+              <div class="field-name">ID</div>
+              <div class="field-type">Number (unique, required)</div>
+            </div>
+            <div class="model-field">
+              <div class="field-name">stock</div>
+              <div class="field-type">Number (default: 1)</div>
+            </div>
+            <div class="model-field">
+              <div class="field-name">unit</div>
+              <div class="field-type">
+                String (enum: ['дона', 'кг', 'метр', 'литр', 'м²', 'м³', 'сет',
+                'упаковка'])
+              </div>
+            </div>
+            <div class="model-field">
+              <div class="field-name">from</div>
+              <div class="field-type">Object</div>
+            </div>
+            <div class="model-field">
+              <div class="field-name">createdAt</div>
+              <div class="field-type">Date</div>
+            </div>
+            <div class="model-field">
+              <div class="field-name">updatedAt</div>
+              <div class="field-type">Date</div>
+            </div>
+          </div>
+
+          <div class="routes">
+            <!-- Get All Products Route -->
+            <div class="route">
+              <div class="route-header">
+                <div class="method method-get">GET</div>
+                <div class="url">/products/</div>
+                <div class="auth-badge auth-required">Auth Required</div>
+              </div>
+              <div class="route-body">
+                <div class="description">Barcha mahsulotlarni olish.</div>
+              </div>
+            </div>
+
+            <!-- Get Product By ID Route -->
+            <div class="route">
+              <div class="route-header">
+                <div class="method method-get">GET</div>
+                <div class="url">/products/one/:id</div>
+                <div class="auth-badge auth-required">Auth Required</div>
+              </div>
+              <div class="route-body">
+                <div class="description">
+                  Berilgan ID bo'yicha bitta mahsulotni olish.
+                </div>
+              </div>
+            </div>
+
+            <!-- Create Product Route -->
+            <div class="route">
+              <div class="route-header">
+                <div class="method method-post">POST</div>
+                <div class="url">/products/create</div>
+                <div class="auth-badge auth-required">Auth Required</div>
+              </div>
+              <div class="route-body">
+                <div class="description">Yangi mahsulot qo'shish.</div>
+
+                <div class="request-body">
+                  <div class="sub-title">Request Body:</div>
+                  <div class="code-block">
+                    { "title": "String", "price": "Number", "ID": "Number",
+                    "stock": "Number", "unit": "String", "from": {
+                    "phoneNumber": "String", "address": "String", "name":
+                    "String" } }
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Update Product Route -->
+            <div class="route">
+              <div class="route-header">
+                <div class="method method-put">PUT</div>
+                <div class="url">/products/:id</div>
+                <div class="auth-badge auth-required">Auth Required</div>
+              </div>
+              <div class="route-body">
+                <div class="description">Mahsulotni yangilash.</div>
+              </div>
+            </div>
+
+            <!-- Delete Product Route -->
+            <div class="route">
+              <div class="route-header">
+                <div class="method method-delete">DELETE</div>
+                <div class="url">/products/:id</div>
+                <div class="auth-badge auth-required">Auth Required</div>
+              </div>
+              <div class="route-body">
+                <div class="description">Mahsulotni o'chirish.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Orders Section -->
+      <section class="section">
+        <div class="section-header">
+          <div class="section-title">Orders</div>
+        </div>
+        <div class="section-content">
+          <div class="model">
+            <div class="model-title">Order Model</div>
+            <div class="model-field">
+              <div class="field-name">_id</div>
+              <div class="field-type">ObjectId</div>
+            </div>
+            <div class="model-field">
+              <div class="field-name">customer</div>
+              <div class="field-type">ObjectId (ref: Users)</div>
+            </div>
+            <div class="model-field">
+              <div class="field-name">products</div>
+              <div class="field-type">Array of Product Objects</div>
+            </div>
+            <div class="model-field">
+              <div class="field-name">client</div>
+              <div class="field-type">Object</div>
+            </div>
+            <div class="model-field">
+              <div class="field-name">status</div>
+              <div class="field-type">String (required)</div>
+            </div>
+            <div class="model-field">
+              <div class="field-name">payType</div>
+              <div class="field-type">String (default: '--')</div>
+            </div>
+            <div class="model-field">
+              <div class="field-name">totalPrice</div>
+              <div class="field-type">Number (default: 0)</div>
+            </div>
+            <div class="model-field">
+              <div class="field-name">orderDate</div>
+              <div class="field-type">Date (default: Date.now)</div>
+            </div>
+          </div>
+
+          <div class="routes">
+            <!-- Get All Orders Route -->
+            <div class="route">
+              <div class="route-header">
+                <div class="method method-get">GET</div>
+                <div class="url">/orders/</div>
+                <div class="auth-badge auth-required">Auth Required</div>
+              </div>
+              <div class="route-body">
+                <div class="description">
+                  Barcha buyurtmalarni olish (so'nggi buyurtmalar tartibida).
+                </div>
+              </div>
+            </div>
+
+            <!-- Get Order Stats Route -->
+            <div class="route">
+              <div class="route-header">
+                <div class="method method-get">GET</div>
+                <div class="url">/orders/stats</div>
+                <div class="auth-badge auth-required">Auth Required</div>
+              </div>
+              <div class="route-body">
+                <div class="description">
+                  Buyurtmalar statistik ma'lumotlarini olish.
+                </div>
+              </div>
+            </div>
+
+            <!-- Get Order By ID Route -->
+            <div class="route">
+              <div class="route-header">
+                <div class="method method-get">GET</div>
+                <div class="url">/orders/:id</div>
+                <div class="auth-badge auth-required">Auth Required</div>
+              </div>
+              <div class="route-body">
+                <div class="description">
+                  Berilgan ID bo'yicha bitta buyurtmani olish.
+                </div>
+              </div>
+            </div>
+
+            <!-- Create Order Route -->
+            <div class="route">
+              <div class="route-header">
+                <div class="method method-post">POST</div>
+                <div class="url">/orders/new</div>
+                <div class="auth-badge auth-required">Auth Required</div>
+              </div>
+              <div class="route-body">
+                <div class="description">Yangi buyurtma yaratish.</div>
+
+                <div class="request-body">
+                  <div class="sub-title">Request Body:</div>
+                  <div class="code-block">
+                    { "customer": "User ID", "products": [ { "product": "Product
+                    ID", "amount": "Number", "unit": "String", "price": "Number"
+                    } ], "client": { "fullName": "String", "phoneNumber":
+                    "String", "address": "String" }, "status": "String",
+                    "payType": "String" }
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Update Order Route -->
+            <div class="route">
+              <div class="route-header">
+                <div class="method method-put">PUT</div>
+                <div class="url">/orders/:id</div>
+                <div class="auth-badge auth-required">Auth Required</div>
+              </div>
+              <div class="route-body">
+                <div class="description">Buyurtmani yangilash.</div>
+              </div>
+            </div>
+
+            <!-- Delete Order Route -->
+            <div class="route">
+              <div class="route-header">
+                <div class="method method-delete">DELETE</div>
+                <div class="url">/orders/:id</div>
+                <div class="auth-badge auth-required">Auth Required</div>
+              </div>
+              <div class="route-body">
+                <div class="description">
+                  Buyurtmani bekor qilish yoki o'chirish.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Stats Section -->
+      <section class="section">
+        <div class="section-header">
+          <div class="section-title">Statistics</div>
+        </div>
+        <div class="section-content">
+          <div class="model">
+            <div class="model-title">Stats Model</div>
+            <div class="model-field">
+              <div class="field-name">filter</div>
+              <div class="field-type">Object</div>
+            </div>
+            <div class="model-field">
+              <div class="field-name">daily</div>
+              <div class="field-type">Array of daily stats</div>
+            </div>
+            <div class="model-field">
+              <div class="field-name">monthly</div>
+              <div class="field-type">PeriodStatSchema</div>
+            </div>
+            <div class="model-field">
+              <div class="field-name">yearly</div>
+              <div class="field-type">PeriodStatSchema</div>
+            </div>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-title">PeriodStatSchema</div>
+              <div class="model-field">
+                <div class="field-name">current</div>
+                <div class="field-type">StatDetailSchema</div>
+              </div>
+              <div class="model-field">
+                <div class="field-name">previous</div>
+                <div class="field-type">StatDetailSchema</div>
+              </div>
+              <div class="model-field">
+                <div class="field-name">growth</div>
+                <div class="field-type">Object</div>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-title">StatDetailSchema</div>
+              <div class="model-field">
+                <div class="field-name">totalOrders</div>
+                <div class="field-type">Number</div>
+              </div>
+              <div class="model-field">
+                <div class="field-name">totalOrderPrice</div>
+                <div class="field-type">Number</div>
+              </div>
+              <div class="model-field">
+                <div class="field-name">totalProducts</div>
+                <div class="field-type">Number</div>
+              </div>
+              <div class="model-field">
+                <div class="field-name">totalStockValue</div>
+                <div class="field-type">Number</div>
+              </div>
+              <div class="model-field">
+                <div class="field-name">soldCount</div>
+                <div class="field-type">Number</div>
+              </div>
+              <div class="model-field">
+                <div class="field-name">soldValue</div>
+                <div class="field-type">Number</div>
+              </div>
+              <div class="model-field">
+                <div class="field-name">revenue</div>
+                <div class="field-type">Number</div>
+              </div>
+              <div class="model-field">
+                <div class="field-name">cost</div>
+                <div class="field-type">Number</div>
+              </div>
+              <div class="model-field">
+                <div class="field-name">profit</div>
+                <div class="field-type">Number</div>
+              </div>
+              <div class="model-field">
+                <div class="field-name">loss</div>
+                <div class="field-type">Number</div>
+              </div>
+              <div class="model-field">
+                <div class="field-name">margin</div>
+                <div class="field-type">Number</div>
+              </div>
+              <div class="model-field">
+                <div class="field-name">averageOrderValue</div>
+                <div class="field-type">Number</div>
+              </div>
+              <div class="model-field">
+                <div class="field-name">topSelling</div>
+                <div class="field-type">Object</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <footer>
+      <div class="container">
+        <p>Inventory Management System API Documentation &copy; 2025-2035</p>
+      </div>
+    </footer>
+  </body>
+</html>
