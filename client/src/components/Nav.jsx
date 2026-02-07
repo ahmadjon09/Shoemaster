@@ -533,6 +533,16 @@ export const Nav = () => {
                   <span>Профилни таҳрирлаш</span>
                 </Link>
                 <button
+                  onClick={() => setIsOpend(true)}
+                  className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors ${dark
+                    ? 'text-gray-400 hover:bg-gray-900'
+                    : 'text-gray-600 hover:bg-gray-50'
+                    }`}
+                >
+                  <Settings size={16} />
+                  Созламалар
+                </button>
+                <button
                   onClick={handleLogout}
                   className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors ${dark
                     ? 'text-red-400 hover:bg-red-900'

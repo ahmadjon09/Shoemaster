@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 
 const DEFAULT_SETTINGS = {
     showDollar: true,
-    aiAssistant: false,
+    aiAssistant: true,
 };
 
 export default function SettingsModal({ open, onClose }) {
