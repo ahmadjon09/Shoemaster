@@ -430,8 +430,8 @@ export const Nav = () => {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.1 }}
               >
-                <div className='bg-blue-600 p-2 rounded-md'>
-                  <User className='h-5 w-5 text-white' />
+                <div className='rounded-md'>
+                  <img src={user?.avatar} alt="User avatar" className="w-10 h-10 object-cover rounded-xl" />
                 </div>
                 <div>
                   <p className={`font-medium ${dark ? 'text-white' : 'text-gray-800'}`}>

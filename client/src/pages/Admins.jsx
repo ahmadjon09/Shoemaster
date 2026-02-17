@@ -7,7 +7,8 @@ import {
   UserCheck,
   Phone,
   Mail,
-  Search
+  Search,
+  X
 } from 'lucide-react'
 import useSWR from 'swr'
 import Axios from '../middlewares/fetcher'
@@ -26,11 +27,13 @@ export const Admins = () => {
     revalidateOnFocus: true,
     revalidateOnReconnect: true
   })
-
+  const [showImageModal, setShowImageModal] = useState(false)
+  const [previewImage, setPreviewImage] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
 
-  const admins = (data?.data?.data || []).filter(user => user.role === 'admin')
+  const admins = (data?.data?.data || []).filter(user => user.role === 'admin' && user._id !== '693990b5e2045844bf880be7')
   const isCurrentUser = user._id
+
 
   // Filter admins based on search
   const filteredAdmins = useMemo(() => {
@@ -61,6 +64,12 @@ export const Admins = () => {
     }
   }
 
+  const handlePreviewImage = (avatar) => {
+    if (avatar) {
+      setPreviewImage(avatar)
+      setShowImageModal(true)
+    }
+  }
   const getRoleColor = admin => {
     if (admin.owner) return dark ? 'bg-red-900 text-red-200 border-red-700' : 'bg-red-100 text-red-800 border-red-200'
     if (admin._id === isCurrentUser)
@@ -80,11 +89,7 @@ export const Admins = () => {
     return 'Администратор'
   }
 
-  const getAdminIconColor = admin => {
-    if (admin.owner) return dark ? 'bg-red-900 text-red-200' : 'bg-red-100 text-red-600'
-    if (admin._id === isCurrentUser) return dark ? 'bg-amber-900 text-amber-200' : 'bg-amber-100 text-amber-600'
-    return dark ? 'bg-purple-900 text-purple-200' : 'bg-purple-100 text-purple-600'
-  }
+
 
   // Dark mode styles
   const bgGradient = dark ? 'from-gray-900 to-gray-800' : 'from-purple-50 to-indigo-100'
@@ -101,6 +106,23 @@ export const Admins = () => {
 
   return (
     <div className={`min-h-screen bg-gradient-to-br ${bgGradient} p-4 md:p-6 transition-colors duration-300`}>
+      {showImageModal && (
+        <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 `}>
+          <div className={`relative rounded-xl shadow-2xl max-w-2xl max-h-[90vh] overflow-hidden ${dark ? 'bg-gray-800' : 'bg-white'}`}>
+            <button
+              onClick={() => setShowImageModal(false)}
+              className={`absolute top-4 right-4 z-10 p-2 rounded-full ${dark ? 'bg-gray-900/80 text-white hover:bg-gray-700' : 'bg-white/80 text-gray-800 hover:bg-white'}`}
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <img
+              src={previewImage}
+              alt="Avatar preview"
+              className="w-full h-auto max-h-[80vh] object-contain"
+            />
+          </div>
+        </div>
+      )}
       <div className='mx-auto'>
         {/* Header Section */}
         <motion.div
@@ -273,7 +295,9 @@ export const Admins = () => {
                       {/* Admin Info */}
                       <td className='py-5 px-8'>
                         <div className='flex items-center gap-4'>
-                          <img className='w-[50px] h-[50px] object-cover rounded-xl' src={admin.avatar} alt={admin.firstName} />
+                          <img
+                            onClick={() => handlePreviewImage(admin.avatar)}
+                            className='w-[50px] h-[50px] object-cover rounded-xl' src={admin.avatar} alt={admin.firstName} />
                           <div>
                             <p className={`font-bold text-lg group-hover:text-purple-600 transition-colors ${textColor}`}>
                               {admin.firstName} {admin.lastName}

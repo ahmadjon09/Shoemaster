@@ -83,7 +83,7 @@ const LoginForm = () => {
       window.location.href = '/'
     } catch (error) {
       const errorMessage =
-        error.response?.data?.message || 'Киришда хатолик юз берди'
+        error.response?.data?.message || error.response.massage || 'Жуда кўп сўров'
       setErrors({
         api: errorMessage,
         ...(error.response?.data?.errors || {})

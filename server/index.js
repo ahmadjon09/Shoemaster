@@ -13,8 +13,12 @@ import { getSystemHealth } from './controllers/health.js'
 import os from "os"
 import isExisted from './middlewares/isExisted.js'
 import IsAdmin from './middlewares/IsAdmin.js'
+import { fileURLToPath } from 'url'
+import { apilimiter } from './middlewares/apiLimit.js'
+import { authlimiter } from './middlewares/authLimit.js'
 
-
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 dotenv.config()
 const getLocalIP = () => {
@@ -45,6 +49,7 @@ app.get('/api/status', (_, res) => {
   })
 })
 app.get('/api/', (_, res) => res.send('Server is running!'))
+app.use('/api', apilimiter)
 app.use('/api/users', UserRoutes)
 app.use('/api/stats', isExisted, IsAdmin, StatsRoutes)
 app.use('/api/products', ProductRoutes)
@@ -58,6 +63,13 @@ app.get('/api/about', (_, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'))
 })
 
+app.use((req, res) => {
+  if (req.path.startsWith("/api")) {
+    return res.status(404).json({ message: "Route not found" });
+  }
+
+  res.sendFile(path.join(__dirname, 'public', '404.html'))
+});
 
 const keepServerAlive = () => {
   const pingInterval = 12 * 60 * 1000;

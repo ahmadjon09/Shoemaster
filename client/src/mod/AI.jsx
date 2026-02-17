@@ -137,7 +137,7 @@ export const FloatingAIBot = () => {
     };
 
     const handleSendMessage = async () => {
-        if (!inputMessage.trim() && selectedImages.length === 0) return;
+        if (!inputMessage.trim() && selectedImages.length === 0 && isTyping) return;
 
         const userMessage = {
             id: Date.now(),
@@ -161,7 +161,7 @@ export const FloatingAIBot = () => {
         setInputMessage('');
         setSelectedImages([]);
 
-        // Auto-resize textarea
+
         if (textareaRef.current) {
             textareaRef.current.style.height = 'auto';
         }

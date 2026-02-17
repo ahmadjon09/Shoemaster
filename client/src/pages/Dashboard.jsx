@@ -55,7 +55,10 @@ export default function DashboardPage() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [refreshKey, setRefreshKey] = useState(0);
     const dashboardRef = useRef(null);
-
+    const [url, setUrl] = useState('');
+    useEffect(() => {
+        setUrl(localStorage.getItem('base_url') || '');
+    }, []);
     // Barcha API so'rovlarini yuklash
     const { data: dashboardData, mutate: mutateDashboard, isLoading: dashboardLoading } = useSWR(
         '/stats/dashboard',
@@ -102,6 +105,10 @@ export default function DashboardPage() {
             refreshInterval: 10000,
             revalidateOnReconnect: true
         }
+    );
+    const { data: systemHealth, isLoading: systemHealthLoading } = useSWR(
+        '/health',
+        Fetch
     );
 
     // Format number function
@@ -819,8 +826,6 @@ export default function DashboardPage() {
                         ) : (
                             products.slice(0, 5).map((product, index) => {
                                 const catInfo = getCategoryInfo(product.category);
-                                console.log(product);
-
                                 return (
                                     <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors group">
                                         <div className="flex items-center">
@@ -981,14 +986,18 @@ export default function DashboardPage() {
                             </div>
                             <div className="flex justify-between text-sm">
                                 <span className="text-gray-600">Бандлик даражаси:</span>
-                                <span className="font-semibold">--</span>
+                                <span className="font-semibold">{systemHealth?.data.memory.usage || "--"}</span>
                             </div>
                             <div className="flex justify-between text-sm">
                                 <span className="text-gray-600">Хотира фойдаланиш:</span>
-                                <span className="font-semibold">-- / --</span>
+                                <span className="font-semibold">{systemHealth?.data.memory.used || "--"} / {systemHealth?.data.memory.total || "--"}</span>
                             </div>
                         </div>
                     </div>
+                    <a
+                        target='_blanck'
+                        href={url + '/system'}
+                        className="text-sm text-blue-600 hover:underline">Реал вақтда кўриш</a>
                 </div>
             </div>
 
