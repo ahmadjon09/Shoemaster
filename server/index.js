@@ -40,7 +40,7 @@ app.use(express.json())
 
 
 
-app.get('/api/status', (_, res) => {
+app.get('/v1/status', (_, res) => {
   setImmediate(() => {
     res.json({
       status: 'working',
@@ -48,23 +48,23 @@ app.get('/api/status', (_, res) => {
     })
   })
 })
-app.get('/api/', (_, res) => res.send('Server is running!'))
-app.use('/api', apilimiter)
-app.use('/api/users', UserRoutes)
-app.use('/api/stats', isExisted, IsAdmin, StatsRoutes)
-app.use('/api/products', ProductRoutes)
-app.use('/api/orders', OrderRoutes)
-app.use('/api/clients', ClientRoutes)
-app.use('/api/health', getSystemHealth)
-app.get('/api/system', (_, res) => {
+app.get('/v1/', (_, res) => res.send('Server is running!'))
+app.use('/v1', apilimiter)
+app.use('/v1/users', UserRoutes)
+app.use('/v1/stats', isExisted, IsAdmin, StatsRoutes)
+app.use('/v1/products', ProductRoutes)
+app.use('/v1/orders', OrderRoutes)
+app.use('/v1/clients', ClientRoutes)
+app.use('/v1/health', getSystemHealth)
+app.get('/v1/system', (_, res) => {
   res.sendFile(path.join(__dirname, 'public', 'health.html'))
 })
-app.get('/api/about', (_, res) => {
+app.get('/v1/about', (_, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'))
 })
 
 app.use((req, res) => {
-  if (req.path.startsWith("/api")) {
+  if (req.path.startsWith("/v1")) {
     return res.status(404).json({ message: "Route not found" });
   }
 
