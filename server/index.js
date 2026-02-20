@@ -15,7 +15,7 @@ import isExisted from './middlewares/isExisted.js'
 import IsAdmin from './middlewares/IsAdmin.js'
 import { fileURLToPath } from 'url'
 import { apilimiter } from './middlewares/apiLimit.js'
-import { authlimiter } from './middlewares/authLimit.js'
+// import { authlimiter } from './middlewares/authLimit.js'
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -40,16 +40,19 @@ app.use(express.json())
 
 
 
+app.use('/v1', apilimiter)
+app.get('/v1/', (_, res) => res.send('Server is running!'))
+
 app.get('/v1/status', (_, res) => {
   setImmediate(() => {
     res.json({
       status: 'working',
-      port: process.env.PORT || 3000
+      port: process.env.PORT || 8799,
+      uptime: process\.uptime(),
+      timestamp: new Date().toISOString()
     })
   })
 })
-app.get('/v1/', (_, res) => res.send('Server is running!'))
-app.use('/v1', apilimiter)
 app.use('/v1/users', UserRoutes)
 app.use('/v1/stats', isExisted, IsAdmin, StatsRoutes)
 app.use('/v1/products', ProductRoutes)
