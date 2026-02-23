@@ -48,7 +48,7 @@ app.get('/v1/status', (_, res) => {
     res.json({
       status: 'working',
       port: process.env.PORT || 8799,
-      uptime: process\.uptime(),
+      uptime: process.uptime(),
       timestamp: new Date().toISOString()
     })
   })
