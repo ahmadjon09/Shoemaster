@@ -3,8 +3,8 @@ import { X, DollarSign, BrainCircuit } from "lucide-react";
 import { useEffect, useState } from "react";
 
 const DEFAULT_SETTINGS = {
-    showDollar: true,
-    aiAssistant: true,
+    showDollar: false,
+    aiAssistant: false,
 };
 
 export default function SettingsModal({ open, onClose }) {

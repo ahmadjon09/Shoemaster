@@ -4,7 +4,8 @@ const OrderSchema = new mongoose.Schema({
   customer: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Users',
-    required: true
+    required: true,
+    index: true
   },
 
   products: [
@@ -12,7 +13,8 @@ const OrderSchema = new mongoose.Schema({
       product: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Product',
-        required: true
+        required: true,
+        index: true
       },
 
       quantity: {
@@ -31,6 +33,7 @@ const OrderSchema = new mongoose.Schema({
   client: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Clients",
+    index: true
   },
   noClient: {
     type: Boolean,

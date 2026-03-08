@@ -3,53 +3,191 @@ import { sendErrorResponse } from '../middlewares/sendErrorResponse.js'
 import Users from "../models/user.js"
 import { bot } from '../bot.js';
 
-const buildProductMessage = (products) => {
-  const time = new Date().toLocaleString("uz-UZ", {
-    timeZone: "Asia/Tashkent"
+/* =========================================================
+   HELPERS
+========================================================= */
+
+const escapeHtml = (text = "") => {
+  return String(text)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+};
+
+const formatValue = (value) => {
+  if (value === undefined || value === null || value === "") return "—";
+
+  if (Array.isArray(value)) {
+    if (!value.length) return "[]";
+    return value.join(", ");
+  }
+
+  if (typeof value === "object") {
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return String(value);
+    }
+  }
+
+  return String(value);
+};
+
+const getTashkentTime = () => {
+  return new Date().toLocaleString("uz-UZ", {
+    timeZone: "Asia/Tashkent",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit"
   });
+};
 
-  let message = products.removed ? `❌ ЎЧИРИЛДИ\n` : `📦 <b>ЯНГИ / ЯНГИЛАНГАН МАҲСУЛОТЛАР</b>\n`;
-  message += `━━━━━━\n\n`;
+const cloneProduct = (product) => {
+  if (!product) return null;
+  return JSON.parse(JSON.stringify(product));
+};
 
-  products.forEach((product, index) => {
-    message += `▫️ <b>${index + 1}. ${product.title}</b>\n`;
+const buildDiff = (oldData = {}, newData = {}) => {
+  const fields = ["title", "sku", "category", "description", "count", "mainImages", "status"];
+  const changes = {};
 
-    if (product.sku) {
-      message += `   ├─ 🆔 АРТ: <code>${product.sku}</code>\n`;
+  for (const field of fields) {
+    const oldVal = oldData[field];
+    const newVal = newData[field];
+
+    const oldString = JSON.stringify(oldVal ?? null);
+    const newString = JSON.stringify(newVal ?? null);
+
+    if (oldString !== newString) {
+      changes[field] = {
+        old: oldVal,
+        new: newVal
+      };
     }
+  }
 
-    if (product.addedCount) {
-      message += `   ├─ ➕ Қўшилди: ${product.addedCount} дона\n`;
-    }
+  return changes;
+};
 
-    if (product.removed) {
-      message += `   ├─ ❌ ЎЧИРИЛДИ\n`;
-    }
+const buildProductBaseInfo = (product = {}) => {
+  let text = "";
 
-    if (product.category) {
-      message += `   ├─ 📂 Категория: ${product.category}\n`;
-    }
+  text += `📌 <b>Номи:</b> ${escapeHtml(product.title || "—")}\n`;
+  text += `🆔 <b>ART:</b> <code>${escapeHtml(product.sku || "—")}</code>\n`;
+  text += `📂 <b>Категория:</b> ${escapeHtml(product.category || "—")}\n`;
+  text += `📦 <b>Қолдиқ:</b> ${escapeHtml(product.count ?? 0)} дона\n`;
 
-    if (typeof product.count === "number") {
-      message += `   ├─ 📦 Қолдиқ: ${product.count} дона\n`;
-    }
+  if (product.status !== undefined) {
+    text += `📍 <b>Статус:</b> ${escapeHtml(product.status || "—")}\n`;
+  }
 
-    if (product.mainImages?.length) {
-      message += `   ├─ 🖼 Расм: ${product.mainImages[0]}\n`;
-    }
+  if (product.description) {
+    text += `📝 <b>Тавсиф:</b> ${escapeHtml(product.description)}\n`;
+  }
 
+  if (product.mainImages?.length) {
+    text += `🖼 <b>1-расм:</b> ${escapeHtml(product.mainImages[0])}\n`;
+    text += `🖼 <b>Расмлар сони:</b> ${product.mainImages.length}\n`;
+  } else {
+    text += `🖼 <b>Расм:</b> —\n`;
+  }
+
+  return text;
+};
+
+const buildChangesText = (changes = {}) => {
+  const entries = Object.entries(changes);
+  if (!entries.length) return `   └─ Ўзгариш йўқ\n`;
+
+  let text = "";
+
+  for (let i = 0; i < entries.length; i++) {
+    const [field, values] = entries[i];
+    const isLast = i === entries.length - 1;
+
+    let label = field;
+    if (field === "sku") label = "ART";
+    if (field === "title") label = "Номи";
+    if (field === "category") label = "Категория";
+    if (field === "description") label = "Тавсиф";
+    if (field === "count") label = "Қолдиқ";
+    if (field === "mainImages") label = "Расмлар";
+    if (field === "status") label = "Статус";
+
+    text += `   ${isLast ? "└" : "├"}─ <b>${escapeHtml(label)}</b>\n`;
+    text += `   ${isLast ? " " : "│"}   ├─ Олдин: <code>${escapeHtml(formatValue(values.old))}</code>\n`;
+    text += `   ${isLast ? " " : "│"}   └─ Янги: <code>${escapeHtml(formatValue(values.new))}</code>\n`;
+  }
+
+  return text;
+};
+
+const buildProductNotificationMessage = ({
+  eventType,
+  product = {},
+  oldProduct = null,
+  changes = {},
+}) => {
+  const time = getTashkentTime();
+
+  let header = "📦 <b>МАҲСУЛОТ БЎЙИЧА ЯНГИЛАНИШ</b>";
+  if (eventType === "created") header = "🟢 <b>ЯНГИ МАҲСУЛОТ ҚЎШИЛДИ</b>";
+  if (eventType === "stock_added") header = "🟡 <b>МАҲСУЛОТ МИҚДОРИ ОШИРИЛДИ</b>";
+  if (eventType === "updated") header = "🔵 <b>МАҲСУЛОТ ТАҲРИРЛАНДИ</b>";
+  if (eventType === "deleted") header = "🔴 <b>МАҲСУЛОТ ЎЧИРИЛДИ</b>";
+
+  let message = `${header}\n`;
+  message += `━━━━━━━━━━━━━━━━━━\n\n`;
+
+  message += buildProductBaseInfo(product);
+  message += `\n`;
+
+  if (eventType === "created") {
+    message += `➕ <b>Амал:</b> Янги маҳсулот базага қўшилди\n\n`;
+  }
+
+  if (eventType === "stock_added" && oldProduct) {
+    const oldCount = Number(oldProduct.count || 0);
+    const newCount = Number(product.count || 0);
+    const added = newCount - oldCount;
+
+    message += `📈 <b>Омбор ўзгариши:</b>\n`;
+    message += `   ├─ Олдинги қолдиқ: <code>${oldCount}</code>\n`;
+    message += `   ├─ Қўшилган: <code>+${added}</code>\n`;
+    message += `   └─ Янги қолдиқ: <code>${newCount}</code>\n\n`;
+  }
+
+  if (eventType === "updated") {
+    message += `🛠 <b>Ўзгарган майдонлар:</b>\n`;
+    message += buildChangesText(changes);
     message += `\n`;
-  });
+  }
 
-  message += `━━━━━━━━━━\n`;
-  message += `🕒 ${time}`;
+  if (eventType === "deleted" && oldProduct) {
+    message += `🗑 <b>Ўчиришдан олдинги ҳолати:</b>\n`;
+    message += `   ├─ Номи: ${escapeHtml(oldProduct.title || "—")}\n`;
+    message += `   ├─ ART: <code>${escapeHtml(oldProduct.sku || "—")}</code>\n`;
+    message += `   ├─ Категория: ${escapeHtml(oldProduct.category || "—")}\n`;
+    message += `   └─ Қолдиқ: ${escapeHtml(oldProduct.count ?? 0)} дона\n\n`;
+  }
+
+  message += `━━━━━━━━━━━━━━━━━━\n`;
+  message += `🕒 <b>Вақт:</b> ${escapeHtml(time)}`;
 
   return message;
 };
 
-const sendBotNotification = async (products) => {
+const sendBotNotification = async ({
+  eventType,
+  product,
+  oldProduct = null,
+  changes = {}
+}) => {
   try {
-    if (!products?.length) return;
+    if (!product) return;
 
     const users = await Users.find({
       isLoggedIn: true,
@@ -58,9 +196,13 @@ const sendBotNotification = async (products) => {
 
     if (!users.length && !process.env.GROUP_ID) return;
 
-    const message = buildProductMessage(products);
+    const message = buildProductNotificationMessage({
+      eventType,
+      product,
+      oldProduct,
+      changes
+    });
 
-    // 👤 USERLARGA
     for (const user of users) {
       try {
         await bot.telegram.sendMessage(user.telegramId, message, {
@@ -72,7 +214,6 @@ const sendBotNotification = async (products) => {
       }
     }
 
-    // 👥 GROUPGA
     if (process.env.GROUP_ID) {
       try {
         await bot.telegram.sendMessage(process.env.GROUP_ID, message, {
@@ -85,11 +226,15 @@ const sendBotNotification = async (products) => {
       }
     }
 
-    console.log("✅ Bot habarlar muvaffaqiyatli yuborildi");
+    console.log("✅ Bot xabari muvaffaqiyatli yuborildi");
   } catch (err) {
     console.error("❌ Bot notification xatoligi:", err.message);
   }
 };
+
+/* =========================================================
+   CREATE
+========================================================= */
 
 export const CreateNewProduct = async (req, res) => {
   try {
@@ -97,37 +242,28 @@ export const CreateNewProduct = async (req, res) => {
 
     if (!data.sku) {
       return res.status(400).json({
-        message: "SKU мажбурий",
+        message: "ART мажбурий",
       });
     }
 
     const incomingCount = Number(data.count) || 0;
 
-    /* =======================
-       1️⃣ SKU bo‘yicha qidirish
-    ======================= */
     const existingProduct = await Product.findOne({ sku: data.sku });
 
-    /* =======================
-       2️⃣ Agar product mavjud bo‘lsa
-    ======================= */
     if (existingProduct) {
-      const oldCount = existingProduct.count || 0;
-      const addedCount = incomingCount
+      const oldProduct = cloneProduct(existingProduct.toObject ? existingProduct.toObject() : existingProduct);
 
-      existingProduct.count = oldCount + incomingCount;
+      existingProduct.count = Number(existingProduct.count || 0) + incomingCount;
       await existingProduct.save();
 
-      // agar yangi miqdor oshsa, botga yubor
-      if (incomingCount) {
-        sendBotNotification([{
-          title: existingProduct.title,
-          sku: existingProduct.sku,
-          category: existingProduct.category,
-          mainImages: existingProduct.mainImages,
-          count: existingProduct.count,
-          addedCount
-        }]);
+      const updatedProduct = cloneProduct(existingProduct.toObject ? existingProduct.toObject() : existingProduct);
+
+      if (incomingCount > 0) {
+        await sendBotNotification({
+          eventType: "stock_added",
+          product: updatedProduct,
+          oldProduct
+        });
       }
 
       return res.status(200).json({
@@ -137,30 +273,20 @@ export const CreateNewProduct = async (req, res) => {
       });
     }
 
-    /* =======================
-       3️⃣ Aks holda yangi product
-    ======================= */
     const newProduct = await Product.create({
       title: data.title,
       sku: data.sku,
       category: data.category,
-      gender: data.gender,
-      season: data.season,
-      material: data.material,
       mainImages: data.mainImages || [],
       description: data.description || "",
-      count: incomingCount
+      count: incomingCount,
+      status: data.status
     });
 
-    // yangi product botga
-    sendBotNotification([{
-      title: newProduct.title,
-      sku: newProduct.sku,
-      category: newProduct.category,
-      mainImages: newProduct.mainImages,
-      count: newProduct.count,
-      addedCount: incomingCount
-    }]);
+    await sendBotNotification({
+      eventType: "created",
+      product: cloneProduct(newProduct.toObject ? newProduct.toObject() : newProduct)
+    });
 
     return res.status(201).json({
       message: "Маҳсулот муваффақиятли яратилди ✅",
@@ -173,7 +299,7 @@ export const CreateNewProduct = async (req, res) => {
 
     if (error.code === 11000) {
       return res.status(409).json({
-        message: "Бу SKU аллақачон мавжуд!",
+        message: "Бу ART аллақачон мавжуд!",
       });
     }
 
@@ -183,7 +309,9 @@ export const CreateNewProduct = async (req, res) => {
   }
 };
 
-
+/* =========================================================
+   GET ALL
+========================================================= */
 
 export const GetAllProducts = async (req, res) => {
   try {
@@ -202,12 +330,10 @@ export const GetAllProducts = async (req, res) => {
 
     const query = {};
 
-    // 📂 Category filter
     if (category) {
       query.category = category;
     }
 
-    // 📅 Date filter
     if (date) {
       const startDate = new Date(date);
       startDate.setHours(0, 0, 0, 0);
@@ -220,14 +346,15 @@ export const GetAllProducts = async (req, res) => {
         $lte: endDate
       };
     }
+
     if (type === 'in-stock') {
-      query.count = { $gt: 0 }; // count > 0
+      query.count = { $gt: 0 };
     }
 
     if (type === 'out-of-stock') {
-      query.count = { $eq: 0 }; // count === 0
+      query.count = { $eq: 0 };
     }
-    // 🔍 Search (title + sku)
+
     if (search) {
       const safeSearch = search.trim();
 
@@ -237,10 +364,8 @@ export const GetAllProducts = async (req, res) => {
       ];
     }
 
-    // 📊 TOTAL PRODUCT COUNT
     const total = await Product.countDocuments(query);
 
-    // 📦 TOTAL COUNT (sum of product.count)
     const totalCountAgg = await Product.aggregate([
       { $match: query },
       {
@@ -257,7 +382,8 @@ export const GetAllProducts = async (req, res) => {
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limitNum)
-      .lean({ virtuals: true })
+      .lean({ virtuals: true });
+
     return res.status(200).json({
       data: products,
       total,
@@ -278,6 +404,9 @@ export const GetAllProducts = async (req, res) => {
   }
 };
 
+/* =========================================================
+   UPDATE
+========================================================= */
 
 export const UpdateProduct = async (req, res) => {
   try {
@@ -288,7 +417,8 @@ export const UpdateProduct = async (req, res) => {
       return sendErrorResponse(res, 404, "Маҳсулот топилмади!");
     }
 
-    // 🔒 COUNT
+    const oldProduct = cloneProduct(product.toObject ? product.toObject() : product);
+
     if (req.body.count !== undefined) {
       const raw = req.body.count;
       const parsed = typeof raw === "object"
@@ -302,16 +432,13 @@ export const UpdateProduct = async (req, res) => {
       product.count = parsed;
     }
 
-    // 🔹 boshqa maydonlar
     const allowedFields = [
       "title",
-      "price",
       "category",
-      "season",
-      "material",
-      "gender",
       "mainImages",
-      "status"
+      "status",
+      "description",
+      "sku"
     ];
 
     allowedFields.forEach(field => {
@@ -321,6 +448,18 @@ export const UpdateProduct = async (req, res) => {
     });
 
     await product.save();
+
+    const newProduct = cloneProduct(product.toObject ? product.toObject() : product);
+    const changes = buildDiff(oldProduct, newProduct);
+
+    if (Object.keys(changes).length > 0) {
+      await sendBotNotification({
+        eventType: "updated",
+        product: newProduct,
+        oldProduct,
+        changes
+      });
+    }
 
     return res.json({
       message: "Маҳсулот муваффақиятли янгиланди ✅",
@@ -333,51 +472,60 @@ export const UpdateProduct = async (req, res) => {
   }
 };
 
+/* =========================================================
+   DELETE
+========================================================= */
 
 export const DeleteProduct = async (req, res) => {
-  const { id } = req.params
-  try {
+  const { id } = req.params;
 
+  try {
     const product = await Product.findById(id);
+
     if (!product) {
       return res.status(404).json({ message: "Маҳсулот топилмади!" });
     }
 
+    const oldProduct = cloneProduct(product.toObject ? product.toObject() : product);
+
     await product.deleteOne();
 
-    sendBotNotification([{
-      title: product.title,
-      sku: product.sku,
-      category: product.category,
-      mainImages: product.mainImages,
-      count: product.count,
-      removed: true
-    }]);
-    return res
-      .status(200)
-      .json({ message: 'Mahsulot muvaffaqiyatli o‘chirildi.' })
+    await sendBotNotification({
+      eventType: "deleted",
+      product: oldProduct,
+      oldProduct
+    });
+
+    return res.status(200).json({
+      message: 'Mahsulot muvaffaqiyatli o‘chirildi.'
+    });
+
   } catch (error) {
-    if (error.name === 'CastError') {  // error.title emas, error.name bo‘lishi kerak
+    if (error.name === 'CastError') {
       return sendErrorResponse(res, 400, 'Noto‘g‘ri mahsulot ID si.')
     }
+
     return sendErrorResponse(
       res,
       500,
       'Serverda xatolik yuz berdi. Iltimos, keyinroq urinib ko‘ring!',
       error
-    )
+    );
   }
-}
+};
 
+/* =========================================================
+   SCANNER
+========================================================= */
 
 export const Scanner = async (req, res) => {
-  const { id } = req.params
+  const { id } = req.params;
   try {
-    const product = await Product.findOne({ sku: id })
+    const product = await Product.findOne({ sku: id });
     if (!product) {
-      return sendErrorResponse(res, 404, 'топилмади!')
+      return sendErrorResponse(res, 404, 'топилмади!');
     }
-    return res.status(200).json({ product })
+    return res.status(200).json({ product });
   } catch (error) {
     console.log(error);
     return sendErrorResponse(
@@ -385,9 +533,13 @@ export const Scanner = async (req, res) => {
       500,
       'Сервер хатолиги. Илтимос, кейинроқ уриниб кўринг!',
       error
-    )
+    );
   }
-}
+};
+
+/* =========================================================
+   CHECK SKU / ART
+========================================================= */
 
 export const CheckSku = async (req, res) => {
   try {
@@ -395,11 +547,10 @@ export const CheckSku = async (req, res) => {
 
     if (!sku) {
       return res.status(400).json({
-        message: "SKU юборилмади",
+        message: "ART юборилмади",
       });
     }
 
-    // 🔹 Async query uchun await kerak
     const product = await Product.findOne({ sku });
 
     if (!product) {

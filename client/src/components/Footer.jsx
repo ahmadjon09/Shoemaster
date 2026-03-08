@@ -69,7 +69,7 @@ export const Footer = () => {
 
   return (
     <>
-      <AnimatePresence>
+      {/* <AnimatePresence>
         {showScrollTop && (
           <motion.button
             key="scroll-top"
@@ -86,7 +86,7 @@ export const Footer = () => {
             <ArrowUp size={18} className="text-blue-600" />
           </motion.button>
         )}
-      </AnimatePresence>
+      </AnimatePresence> */}
 
       {/* Main Footer */}
       <motion.footer

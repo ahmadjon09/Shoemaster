@@ -44,8 +44,8 @@ export const USDToUZSWidget = ({ position = 'bottom-right', refreshInterval = 60
     }, [isModalOpen])
 
     const positionClasses = {
-        'bottom-left': 'fixed left-2 bottom-6',
-        'bottom-right': 'fixed left-2 bottom-6',
+        'bottom-left': 'fixed left-2 bottom-20',
+        'bottom-right': 'fixed left-2 bottom-20',
         'top-left': 'fixed left-6 top-6',
         'top-right': 'fixed right-6 top-6'
     }

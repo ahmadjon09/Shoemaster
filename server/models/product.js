@@ -4,13 +4,14 @@ import mongooseLeanVirtuals from "mongoose-lean-virtuals";
 
 const ProductSchema = new mongoose.Schema(
   {
-    title: { type: String, required: true },
-    sku: { type: String, default: "", unique: true },
+    title: { type: String, required: true, index: true },
+    sku: { type: String, default: "", unique: true, index: true },
 
     category: {
       type: String,
       // enum: ["sneakers", "boots", "heels", "sandals", "slippers", "shoes", "other"],
-      default: "shoes"
+      default: "other",
+      index: true
     },
 
     gender: {
@@ -28,7 +29,7 @@ const ProductSchema = new mongoose.Schema(
       default: "all",
     },
     sold: { type: Number, default: 0 },
-    count: { type: Number, default: 0 },
+    count: { type: Number, default: 0, index: true },
     material: { type: String, default: "Unknown" },
     mainImages: [String],
     isAvailable: { type: Boolean, default: true },
